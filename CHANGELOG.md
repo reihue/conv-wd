@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A data type `Directory` that provides an abstraction for working directories.
+  - Includes constructors for temporary directories, persistent directories,
+    and directories that are cleaned up on creation.
+  - Provides convenience methods for writing files (bytes, strings, JSON, TOML).
+
 ### Changed
 
 ### Removed
