@@ -1,0 +1,43 @@
+name: Tests
+
+on: [push, pull_request]
+
+env:
+  CARGO_TERM_COLOR: always
+  RESULTS_ARTIFACT_NAME: conv-wd-test-results
+  RESULTS_DIR: target/conv-wd-test-results
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache cargo registry and target
+        uses: actions/cache@v4
+        with:
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+      - uses: taiki-e/install-action@cargo-llvm-cov
+      - uses: taiki-e/install-action@nextest
+      - name: Run tests with coverage
+        run: cargo llvm-cov nextest --html
+      - name: Run clippy
+        run: cargo clippy --no-deps -- -D warnings
+      - name: Run fmt check
+        run: cargo fmt -- --check
+      - name: Copy coverage results
+        run: |
+          mkdir -p ${{ env.RESULTS_DIR }}/coverage
+          cp -r target/llvm-cov/html/* ${{ env.RESULTS_DIR }}/coverage/
+      - name: Copy test results
+        run: |
+          mkdir -p ${{ env.RESULTS_DIR }}/test
+          cp target/nextest/default/junit.xml ${{ env.RESULTS_DIR }}/test/
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.RESULTS_ARTIFACT_NAME }}
+          path: ${{ env.RESULTS_DIR }}

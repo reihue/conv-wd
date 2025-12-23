@@ -1,5 +1,7 @@
 # Convenient Working Directories
 
+[![Tests](https://github.com/reihue/conv-wd/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/reihue/conv-wd/actions/workflows/tests.yml)
+
 This library provides an abstraction for directories that allows convenient
 creation and management of working directories with different lifetimes and behaviors
 (e.g. temporary or persistent directories). It also offers some convenience methods
