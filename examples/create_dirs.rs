@@ -25,13 +25,13 @@ fn main() {
 
     // Create structured data (JSON and TOML) files inside the directory.
     let data = answer::the();
-    outdir.write_string(format!("answer_string.json"), &data);
-    outdir.write_json(format!("answer_json_1.json"), &data);
-    outdir.write_json(format!("answer_json_2"), &data);
-    outdir.write_json(format!("answer_json_3.txt"), &data);
-    outdir.write_toml(format!("answer_toml_1.toml"), &data);
-    outdir.write_toml(format!("answer_toml_2"), &data);
-    outdir.write_toml(format!("answer_toml_3.txt"), &data);
+    outdir.write_string("answer_string.json", &data);
+    outdir.write_json("answer_json_1.json", &data);
+    outdir.write_json("answer_json_2", &data);
+    outdir.write_json("answer_json_3.txt", &data);
+    outdir.write_toml("answer_toml_1.toml", &data);
+    outdir.write_toml("answer_toml_2", &data);
+    outdir.write_toml("answer_toml_3.txt", &data);
 }
 
 /// Module with example Struct for structured data files.
