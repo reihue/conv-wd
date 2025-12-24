@@ -25,7 +25,7 @@ jobs:
       - name: Run tests with coverage
         run: cargo llvm-cov nextest --html
       - name: Run clippy
-        run: cargo clippy --no-deps -- -D warnings
+        run: cargo clippy --no-deps --all-targets --all-features -- -D warnings
       - name: Run fmt check
         run: cargo fmt -- --check
       - name: Copy coverage results
