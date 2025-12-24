@@ -1,6 +1,5 @@
 use super::*;
 
-use crate::util::assert_relative_path;
 use std::path::Path;
 
 /// Convenience methods/constructors for working with Cargo projects.
@@ -30,7 +29,7 @@ impl Directory {
     pub fn cargo_manifest_subdir<P: AsRef<Path>>(subdir: P) -> Self {
         let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")
             .expect("CARGO_MANIFEST_DIR environment variable is not set");
-        assert_relative_path(subdir.as_ref());
+        assert!(!subdir.as_ref().is_absolute());
         let path = std::path::Path::new(&manifest_dir).join(subdir.as_ref());
         Directory::create(path)
     }
