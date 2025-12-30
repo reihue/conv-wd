@@ -3,9 +3,11 @@ use super::*;
 impl Drop for Directory {
     /// Drops the Directory instance.
     /// If the directory is marked as temporary, it is removed from the file system.
+    /// TODO: Improve error handling, differentiate between non-empty and other errors?
     fn drop(&mut self) {
-        if !self.keep_on_drop {
-            self.remove();
+        let mut path = self.path();
+        while path != self.base_path && std::fs::remove_dir(&path).is_ok() {
+            path.pop();
         }
     }
 }
@@ -23,10 +25,12 @@ mod tests {
 
         {
             let directory = Directory {
-                path: dir_path.clone(),
-                keep_on_drop: false,
+                base_path: temp_dir.path().to_path_buf(),
+                subdirs: vec!["temp_dir".to_string()],
             };
             directory.ensure_exists();
+            assert!(dir_path.exists());
+            assert!(dir_path.is_dir());
         }
         assert!(!dir_path.exists());
     }
@@ -38,8 +42,8 @@ mod tests {
 
         {
             let directory = Directory {
-                path: dir_path.clone(),
-                keep_on_drop: true,
+                base_path: dir_path.clone(),
+                subdirs: vec![],
             };
             directory.ensure_exists();
         }

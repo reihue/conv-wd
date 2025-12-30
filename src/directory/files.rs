@@ -9,7 +9,7 @@ impl Directory {
     /// Panics if the path is absolute or if the write operation fails.
     pub fn write_bytes<P: AsRef<Path>, C: AsRef<[u8]>>(&self, relative_path: P, content: C) {
         assert!(!relative_path.as_ref().is_absolute());
-        let file_path = self.path.join(relative_path.as_ref());
+        let file_path = self.path().join(relative_path.as_ref());
         std::fs::write(&file_path, content.as_ref())
             .unwrap_or_else(|e| panic!("Failed to write to file at {}: {e}", file_path.display()));
     }

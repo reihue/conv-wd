@@ -4,20 +4,11 @@ use super::*;
 impl Directory {
     /// Creates the directory on the file system if it does not exist.
     /// Panics if the directory cannot be created.
+    /// TODO: revisit name
     pub(super) fn ensure_exists(&self) {
-        std::fs::create_dir_all(&self.path).unwrap_or_else(|e| {
-            panic!("Failed to create directory at {}: {e}", self.path.display())
-        });
-    }
-
-    /// Removes the directory from the file system if it still exists.
-    /// Panics if the directory cannot be removed.
-    pub(super) fn remove(&self) {
-        if self.path.exists() {
-            std::fs::remove_dir_all(&self.path).unwrap_or_else(|e| {
-                panic!("Failed to remove directory at {}: {e}", self.path.display())
-            });
-        }
+        let path = self.path();
+        std::fs::create_dir_all(&path)
+            .unwrap_or_else(|e| panic!("Failed to create directory at {}: {e}", path.display()));
     }
 }
 
@@ -33,31 +24,14 @@ mod tests {
         let dir_path = temp_dir.path().join("test_dir");
 
         let directory = Directory {
-            path: dir_path.clone(),
-            keep_on_drop: false,
+            base_path: temp_dir.path().to_path_buf(),
+            subdirs: vec!["test_dir".to_string()],
         };
         directory.ensure_exists();
+        let path = directory.path();
 
-        assert!(directory.path.exists());
-        assert!(directory.path.is_dir());
-        assert_eq!(directory.path, dir_path);
-    }
-
-    #[test]
-    fn remove() {
-        let temp_dir = tempdir().unwrap();
-        let dir_path = temp_dir.path().join("test_dir");
-        std::fs::create_dir_all(&dir_path).unwrap();
-        assert!(dir_path.exists());
-        assert!(dir_path.is_dir());
-
-        let directory = Directory {
-            path: dir_path.clone(),
-            keep_on_drop: true,
-        };
-
-        directory.remove();
-
-        assert!(!dir_path.exists());
+        assert!(path.exists());
+        assert!(path.is_dir());
+        assert_eq!(path, dir_path);
     }
 }

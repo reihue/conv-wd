@@ -5,10 +5,6 @@
   - Demonstrate usage with `?` operator in examples and tests (e.g. for quick prototyping).
   - Demonstrate proper usage in production code (e.g. logging errors instead of panicking)
     in examples and tests.
-- For more flexibility: Store a base path along with an optional relative subpath.
-  - For temporary `Directory` instances, remove all directories along the path on drop,
-    provided they exist and are empty.
-  - Adjust existing constructors to support this.
 - Add convenience constructors without the extra path, e.g. for:
   - an absolute path
   - the current working directory

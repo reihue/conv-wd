@@ -4,45 +4,105 @@ use std::path::Path;
 
 /// Constructors and factory methods.
 impl Directory {
-    /// Creates a new Directory instance.
+    /// Creates a new `Directory` instance.
     ///
     /// # Arguments
     /// * `path` - The path where the directory should be created.
     ///
     /// # Behaviour
-    /// - If the specified path already exists, the new `Directory` instance is set
-    ///   to be persistent, i.e. the directory will not be removed when the instance
-    ///   is dropped. Note that this also applies if the existing path is a file.
-    /// - If the path does not exist, a new directory is created along with all parents
-    ///   and set to be temporary. The directory will be removed on drop.
-    /// - If there is alrady a file at the specified path or the directory cannot
-    ///   be created for any other reason, this function will panic.
+    /// - Any required parent directories that do not already exist will be created.
+    /// - A record of which subdirectories were created will be stored internally.
+    /// - On drop, all created subdirectories will be removed, unless they contain
+    ///   any content that was not created as part of this process.
     pub fn create<P: AsRef<Path>>(path: P) -> Self {
-        let dir = Self {
-            path: path.as_ref().to_path_buf(),
-            keep_on_drop: path.as_ref().exists(),
+        let path = path.as_ref().to_path_buf();
+        if path.exists() {
+            if !path.is_dir() {
+                panic!("Path {} exists but is not a directory", path.display());
+            }
+            return Self::new_persistent(path);
+        }
+
+        let (parent, subdir) = if let Some(parent) = path.parent() {
+            (
+                parent,
+                path.file_name().unwrap().to_str().unwrap().to_string(),
+            )
+        } else {
+            panic!(
+                "Cannot create directory at {}: no parent directory",
+                path.display()
+            );
         };
 
+        Self::create(parent).new_subdir(&subdir)
+    }
+
+    /// Creates a new persistent `Directory` instance.
+    /// I.e. the directory will not be removed from the
+    /// file system when the instance is dropped.
+    /// Creates the directory on the file system if it does not exist.
+    /// TODO: handle errors if the directory cannot be created.
+    pub fn new_persistent<P: AsRef<Path>>(path: P) -> Self {
+        let dir = Self {
+            base_path: path.as_ref().to_path_buf(),
+            subdirs: Vec::new(),
+        };
         dir.ensure_exists();
         dir
     }
 
-    /// Creates a new persistent Directory instance from self.
-    /// The directory will not be removed when the instance is dropped.
-    pub fn keep(mut self) -> Self {
-        self.keep_on_drop = true;
-        self
-    }
+    /// Creates a new `Directory` instance from `self` and a subdirectory name.
+    /// If the target path already exists, it is used as the base path.
+    /// Otherwise, adds the subdirectory to the internal record of created subdirectories.
+    /// Creates the subdirectory on the file system if it does not exist.
+    /// TODO: handle directory creation errors
+    pub fn new_subdir<S: Into<String>>(mut self, subdir: S) -> Self {
+        let subdir = subdir.into();
+        let target_path = self.base_path.join(&subdir);
+        if target_path.exists() {
+            if !target_path.is_dir() {
+                panic!(
+                    "Path {} exists but is not a directory",
+                    target_path.display()
+                );
+            }
+            return Self::new_persistent(target_path);
+        }
 
-    /// Creates a new Directory instance from self.
-    /// Removes all content on creation.
-    pub fn clean(self) -> Self {
-        self.remove();
+        self.subdirs.push(subdir);
         self.ensure_exists();
         self
     }
 
-    /// Creates a new temporary Directory instance from self.
+    /// Turns `self` into a persistent directory.
+    /// I.e. deletes the information about created subdirectories, so that the
+    /// directory will not be removed from the file system when the instance is dropped.
+    pub fn keep(mut self) -> Self {
+        for d in &self.subdirs {
+            self.base_path.push(d);
+        }
+        self.subdirs.clear();
+        self
+    }
+
+    /// Creates a new `Directory` instance from self.
+    /// Removes all content if the directory already exists.
+    pub fn clean(self) -> Self {
+        for entry in std::fs::read_dir(self.path()).unwrap() {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            if path.is_dir() {
+                std::fs::remove_dir_all(&path).unwrap();
+            } else {
+                std::fs::remove_file(&path).unwrap();
+            }
+        }
+        self.ensure_exists();
+        self
+    }
+
+    /// Creates a new `Directory` instance from self.
     /// Adds a `.gitignore` file that causes all content to be ignored by Git.
     pub fn with_gitignore(self) -> Self {
         self.write_gitignore();
@@ -63,11 +123,11 @@ mod tests {
 
         {
             let directory = Directory::create(&dir_path);
+            let path = directory.path();
 
-            assert!(directory.path.exists());
-            assert!(directory.path.is_dir());
-            assert_eq!(directory.path, dir_path);
-            assert!(!directory.keep_on_drop);
+            assert!(path.exists());
+            assert!(path.is_dir());
+            assert_eq!(path, dir_path);
         }
         assert!(!dir_path.exists());
     }
@@ -82,11 +142,11 @@ mod tests {
 
         {
             let directory = Directory::create(&dir_path);
+            let path = directory.path();
 
-            assert!(directory.path.exists());
-            assert!(directory.path.is_dir());
-            assert_eq!(directory.path, dir_path);
-            assert!(directory.keep_on_drop);
+            assert!(path.exists());
+            assert!(path.is_dir());
+            assert_eq!(path, dir_path);
         }
         assert!(dir_path.exists());
         assert!(dir_path.is_dir());
@@ -113,9 +173,9 @@ mod tests {
         {
             let directory = Directory::create(&dir_path).keep();
 
-            assert!(directory.path.exists());
-            assert!(directory.path.is_dir());
-            assert_eq!(directory.path, dir_path);
+            assert!(directory.base_path.exists());
+            assert!(directory.base_path.is_dir());
+            assert_eq!(directory.base_path, dir_path);
         }
         assert!(dir_path.exists());
         assert!(dir_path.is_dir());
@@ -131,11 +191,12 @@ mod tests {
         assert!(dir_path.is_dir());
 
         let directory = Directory::create(&dir_path).clean();
+        let path = directory.path();
 
-        assert!(directory.path.exists());
-        assert!(directory.path.is_dir());
-        assert_eq!(directory.path, dir_path);
-        assert!(std::fs::read_dir(&dir_path).unwrap().next().is_none());
+        assert!(path.exists());
+        assert!(path.is_dir());
+        assert_eq!(path, dir_path);
+        assert!(std::fs::read_dir(&path).unwrap().next().is_none());
     }
 
     #[test]
@@ -144,13 +205,14 @@ mod tests {
         let dir_path = temp_dir.path().join("temp_dir");
 
         let directory = Directory::create(&dir_path).with_gitignore();
+        let path = directory.path();
 
-        assert!(directory.path.exists());
-        assert!(directory.path.is_dir());
-        assert_eq!(directory.path, dir_path);
-        assert!(dir_path.join(".gitignore").exists());
+        assert!(path.exists());
+        assert!(path.is_dir());
+        assert_eq!(path, dir_path);
+        assert!(path.join(".gitignore").exists());
         assert_eq!(
-            std::fs::read_to_string(dir_path.join(".gitignore")).unwrap(),
+            std::fs::read_to_string(path.join(".gitignore")).unwrap(),
             "*\n"
         );
     }
