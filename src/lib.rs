@@ -2,3 +2,6 @@
 
 mod directory;
 pub use directory::Directory;
+
+mod error;
+pub use error::Error;
