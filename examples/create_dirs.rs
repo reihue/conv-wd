@@ -1,12 +1,12 @@
-use conv_wd::Directory;
+use conv_wd::{Directory, Error};
 
-fn main() {
+fn main() -> Result<(), Error> {
     // Create a persistent directory for output files wich is ignored by git
     // and which is cleaned up on each run.
-    let outdir = Directory::cargo_examples_subdir("output")
-        .keep()
-        .clean()
-        .with_gitignore();
+    let outdir = Directory::cargo_examples_subdir("output")?
+        .keep()?
+        .clean()?
+        .with_gitignore()?;
 
     // Create files inside the directory to demonstrate the `write` methods.
     // the files are created with timestamps in thei names, so their names
@@ -17,21 +17,22 @@ fn main() {
     outdir.write_bytes(
         format!("testfile_from_bytes_{timestamp}.txt"),
         "This is a test file inside the output directory.\n",
-    );
+    )?;
     outdir.write_string(
         format!("testfile_from_string_{timestamp}.txt"),
         "This is another test file inside the output directory.\n",
-    );
-
+    )?;
     // Create structured data (JSON and TOML) files inside the directory.
     let data = answer::the();
-    outdir.write_string("answer_string.json", &data);
-    outdir.write_json("answer_json_1.json", &data);
-    outdir.write_json("answer_json_2", &data);
-    outdir.write_json("answer_json_3.txt", &data);
-    outdir.write_toml("answer_toml_1.toml", &data);
-    outdir.write_toml("answer_toml_2", &data);
-    outdir.write_toml("answer_toml_3.txt", &data);
+    outdir.write_string("answer_string.json", &data)?;
+    outdir.write_json("answer_json_1.json", &data)?;
+    outdir.write_json("answer_json_2", &data)?;
+    outdir.write_json("answer_json_3.txt", &data)?;
+    outdir.write_toml("answer_toml_1.toml", &data)?;
+    outdir.write_toml("answer_toml_2", &data)?;
+    outdir.write_toml("answer_toml_3.txt", &data)?;
+
+    Ok(())
 }
 
 /// Module with example Struct for structured data files.

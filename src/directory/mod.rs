@@ -6,6 +6,7 @@ use std::path::PathBuf;
 /// # Lifecycle:
 /// - Internally stores a base path and a relative path of extra subdirectories.
 /// - On drop, removes all extra subdirectories unless they are not empty.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Directory {
     /// A base path that will be kept on drop.
     base_path: PathBuf,

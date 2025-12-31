@@ -1,10 +1,8 @@
 # To Do
 
-- Error handling: Use `Result` return types instead of panicking in case of errors.
-  - Add custom error type(s) as needed.
-  - Demonstrate usage with `?` operator in examples and tests (e.g. for quick prototyping).
-  - Demonstrate proper usage in production code (e.g. logging errors instead of panicking)
-    in examples and tests.
+- Demonstrate usage
+  - with `?` operator in examples and tests (e.g. for quick prototyping).
+  - logging errors instead of panicking in production code
 - Add convenience constructors without the extra path, e.g. for:
   - an absolute path
   - the current working directory
