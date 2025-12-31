@@ -69,7 +69,7 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path().join("test_dir");
 
-        let directory = Directory::create(dir_path.join("subdir"));
+        let directory = Directory::new(dir_path.join("subdir"));
         let file_name = "test_file.txt";
         let file_content = b"Hello, world!";
         directory.write_bytes(file_name, file_content);
@@ -85,7 +85,7 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path().join("test_dir");
 
-        let directory = Directory::create(dir_path.join("subdir"));
+        let directory = Directory::new(dir_path.join("subdir"));
         let file_name = "test_file.txt";
         let file_content = "Hello, world!";
         directory.write_string(file_name, file_content);
@@ -101,7 +101,7 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path().join("test_dir");
 
-        let directory = Directory::create(dir_path.join("subdir"));
+        let directory = Directory::new(dir_path.join("subdir"));
         directory.write_gitignore();
 
         let written_file_path = directory.path().join(".gitignore");
@@ -119,7 +119,7 @@ mod tests {
     fn write_json() {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path().join("test_dir");
-        let directory = Directory::create(dir_path.join("subdir"));
+        let directory = Directory::new(dir_path.join("subdir"));
 
         let testdata = TestData {
             content: "Hello, JSON!".to_string(),
@@ -145,7 +145,7 @@ mod tests {
     fn write_toml() {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path().join("test_dir");
-        let directory = Directory::create(dir_path.join("subdir"));
+        let directory = Directory::new(dir_path.join("subdir"));
 
         let testdata = TestData {
             content: "Hello, TOML!".to_string(),

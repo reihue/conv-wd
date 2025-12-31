@@ -14,7 +14,7 @@ impl Directory {
     /// - A record of which subdirectories were created will be stored internally.
     /// - On drop, all created subdirectories will be removed, unless they contain
     ///   any content that was not created as part of this process.
-    pub fn create<P: AsRef<Path>>(path: P) -> Self {
+    pub fn new<P: AsRef<Path>>(path: P) -> Self {
         let path = path.as_ref().to_path_buf();
         if path.exists() {
             if !path.is_dir() {
@@ -35,7 +35,7 @@ impl Directory {
             );
         };
 
-        Self::create(parent).new_subdir(&subdir)
+        Self::new(parent).new_subdir(&subdir)
     }
 
     /// Creates a new persistent `Directory` instance.
@@ -117,12 +117,12 @@ mod tests {
     use tempfile::tempdir;
 
     #[test]
-    fn create_non_existing() {
+    fn new_non_existing() {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path().join("test_dir");
 
         {
-            let directory = Directory::create(&dir_path);
+            let directory = Directory::new(&dir_path);
             let path = directory.path();
 
             assert!(path.exists());
@@ -133,7 +133,7 @@ mod tests {
     }
 
     #[test]
-    fn create_existing() {
+    fn new_existing() {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path().join("test_dir");
         std::fs::create_dir_all(&dir_path).unwrap();
@@ -141,7 +141,7 @@ mod tests {
         assert!(dir_path.is_dir());
 
         {
-            let directory = Directory::create(&dir_path);
+            let directory = Directory::new(&dir_path);
             let path = directory.path();
 
             assert!(path.exists());
@@ -153,7 +153,7 @@ mod tests {
     }
 
     #[test]
-    fn create_existing_file_panics() {
+    fn new_existing_file_panics() {
         let temp_dir = tempdir().unwrap();
         let file_path = temp_dir.path().join("test_file.txt");
         std::fs::write(&file_path, b"Test content").unwrap();
@@ -161,7 +161,7 @@ mod tests {
         assert!(file_path.is_file());
 
         let result = std::panic::catch_unwind(|| {
-            Directory::create(&file_path);
+            Directory::new(&file_path);
         });
         assert!(result.is_err());
     }
@@ -171,7 +171,7 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path().join("persistent_dir");
         {
-            let directory = Directory::create(&dir_path).keep();
+            let directory = Directory::new(&dir_path).keep();
 
             assert!(directory.base_path.exists());
             assert!(directory.base_path.is_dir());
@@ -190,7 +190,7 @@ mod tests {
         assert!(dir_path.exists());
         assert!(dir_path.is_dir());
 
-        let directory = Directory::create(&dir_path).clean();
+        let directory = Directory::new(&dir_path).clean();
         let path = directory.path();
 
         assert!(path.exists());
@@ -204,7 +204,7 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path().join("temp_dir");
 
-        let directory = Directory::create(&dir_path).with_gitignore();
+        let directory = Directory::new(&dir_path).with_gitignore();
         let path = directory.path();
 
         assert!(path.exists());

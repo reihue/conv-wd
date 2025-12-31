@@ -31,7 +31,7 @@ impl Directory {
             .expect("CARGO_MANIFEST_DIR environment variable is not set");
         assert!(!subdir.as_ref().is_absolute());
         let path = std::path::Path::new(&manifest_dir).join(subdir.as_ref());
-        Directory::create(path)
+        Directory::new(path)
     }
 
     /// Creates a new `Directory` instance under the `examples`

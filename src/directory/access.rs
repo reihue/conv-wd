@@ -25,7 +25,7 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path().join("test_dir");
 
-        let directory = Directory::create(&dir_path);
+        let directory = Directory::new(&dir_path);
 
         assert_eq!(directory.path(), dir_path.as_path());
     }
