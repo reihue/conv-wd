@@ -1,12 +1,13 @@
-use conv_wd::{Directory, util::Error};
+use conv_wd::Directory;
 
-fn main() -> Result<(), Error> {
+fn main() {
     // Create a persistent directory for output files wich is ignored by git
     // and which is cleaned up on each run.
     let outdir = Directory::cargo_examples_subdir("output")
         .keep()
         .clean()
         .with_gitignore();
+    outdir.initialize().unwrap();
 
     // Create files inside the directory to demonstrate the `write` methods.
     // the files are created with timestamps in thei names, so their names
@@ -14,25 +15,27 @@ fn main() -> Result<(), Error> {
     let timestamp = chrono::offset::Local::now()
         .format("%Y-%m-%d_%H-%M-%S")
         .to_string();
-    outdir.write_bytes(
-        format!("testfile_from_bytes_{timestamp}.txt"),
-        "This is a test file inside the output directory.\n",
-    )?;
-    outdir.write_string(
-        format!("testfile_from_string_{timestamp}.txt"),
-        "This is another test file inside the output directory.\n",
-    )?;
+    outdir
+        .write_bytes(
+            format!("testfile_from_bytes_{timestamp}.txt"),
+            "This is a test file inside the output directory.\n",
+        )
+        .unwrap();
+    outdir
+        .write_string(
+            format!("testfile_from_string_{timestamp}.txt"),
+            "This is another test file inside the output directory.\n",
+        )
+        .unwrap();
     // Create structured data (JSON and TOML) files inside the directory.
     let data = answer::the();
-    outdir.write_string("answer_string.json", &data)?;
-    outdir.write_json("answer_json_1.json", &data)?;
-    outdir.write_json("answer_json_2", &data)?;
-    outdir.write_json("answer_json_3.txt", &data)?;
-    outdir.write_toml("answer_toml_1.toml", &data)?;
-    outdir.write_toml("answer_toml_2", &data)?;
-    outdir.write_toml("answer_toml_3.txt", &data)?;
-
-    Ok(())
+    outdir.write_string("answer_string.json", &data).unwrap();
+    outdir.write_json("answer_json_1.json", &data).unwrap();
+    outdir.write_json("answer_json_2", &data).unwrap();
+    outdir.write_json("answer_json_3.txt", &data).unwrap();
+    outdir.write_toml("answer_toml_1.toml", &data).unwrap();
+    outdir.write_toml("answer_toml_2", &data).unwrap();
+    outdir.write_toml("answer_toml_3.txt", &data).unwrap();
 }
 
 /// Module with example Struct for structured data files.
