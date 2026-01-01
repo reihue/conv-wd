@@ -4,23 +4,23 @@ use super::*;
 impl Directory {
     /// Returns true if the directory exists in the filesystem.
     pub fn exists(&self) -> bool {
-        return self.path.exists();
+        self.path.exists()
     }
 
     /// Returns true if the directory exists and is a directory in the filesystem.
     pub fn is_dir(&self) -> bool {
-        return self.path.is_dir();
+        self.path.is_dir()
     }
 
     /// Returns true if the directory exists and is a file in the filesystem.
     pub fn is_file(&self) -> bool {
-        return self.path.is_file();
+        self.path.is_file()
     }
 
     /// Returns the path of the directory as a `PathBuf`.
     /// Will return an empty `PathBuf` if the path has an error.
     pub fn path(&self) -> PathBuf {
-        return self.path.to_path_buf();
+        self.path.to_path_buf()
     }
 }
 

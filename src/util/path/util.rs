@@ -105,7 +105,7 @@ mod tests {
         let dir_path = temp_dir.path().join("test_dir");
 
         let path = Path::new(&dir_path);
-        assert_eq!(path.verify_exists().is_err(), true);
+        assert!(path.verify_exists().is_err());
 
         std::fs::create_dir_all(&dir_path).unwrap();
         assert_eq!(path.verify_exists(), Ok(()));
@@ -119,12 +119,12 @@ mod tests {
         let file_path = temp_dir.path().join("test_file.txt");
         std::fs::write(&file_path, b"Test content").unwrap();
         let dir = Path::new(&dir_path);
-        let non_existing = Path::new(&temp_dir.path().join("non_existing_entry"));
+        let non_existing = Path::new(temp_dir.path().join("non_existing_entry"));
         let file = Path::new(&file_path);
 
         assert_eq!(dir.verify_is_directory(), Ok(()));
-        assert_eq!(non_existing.verify_is_directory().is_err(), true);
-        assert_eq!(file.verify_is_directory().is_err(), true);
+        assert!(non_existing.verify_is_directory().is_err());
+        assert!(file.verify_is_directory().is_err());
     }
 
     #[test]
@@ -136,10 +136,10 @@ mod tests {
         std::fs::write(&file_path, b"Test content").unwrap();
         let dir = Path::new(&dir_path);
         let file = Path::new(&file_path);
-        let non_existing = Path::new(&temp_dir.path().join("non_existing_entry"));
+        let non_existing = Path::new(temp_dir.path().join("non_existing_entry"));
 
-        assert_eq!(dir.is_file(), false);
-        assert_eq!(file.is_file(), true);
-        assert_eq!(non_existing.is_file(), false);
+        assert!(!dir.is_file());
+        assert!(file.is_file());
+        assert!(!non_existing.is_file());
     }
 }

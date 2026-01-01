@@ -34,6 +34,7 @@ impl Path {
     ///   In particular, this means that if any files were created in the subdirectories,
     ///   or if e.g. multiple `Path` instances share subdirectories, those directories
     ///   will not be removed.
+    ///
     /// TODO:
     /// - Avoid deleting important directories by mistake (e.g. root, user home, also through symlinks)?
     pub fn remove(&mut self) {
