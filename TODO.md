@@ -1,8 +1,5 @@
 # To Do
 
-- Demonstrate usage
-  - with `?` operator in examples and tests (e.g. for quick prototyping).
-  - logging errors instead of panicking in production code
 - Add convenience constructors without the extra path, e.g. for:
   - an absolute path
   - the current working directory
@@ -38,3 +35,6 @@
   - Also check cleanup policy in case of multiple temporary directories
     that share a common ancestor.
   - See also `examples/` directory.
+- Add methods to `Directory` for creating subdirectories on demand
+  as well as automatically when writing files into subdirectories.
+- Add more functionality, like e.g. reading files.
