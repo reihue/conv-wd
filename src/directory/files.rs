@@ -12,11 +12,11 @@ impl Directory {
         &self,
         relative_path: P,
         content: C,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         if relative_path.as_ref().is_absolute() {
             return Err(Error::path_is_absolute(relative_path));
         }
-        let file_path = self.path().join(relative_path.as_ref());
+        let file_path = self.path().join(relative_path);
         std::fs::write(&file_path, content.as_ref())?;
 
         Ok(())
@@ -27,7 +27,7 @@ impl Directory {
         &self,
         relative_path: P,
         content: S,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         self.write_bytes(relative_path, content.into().as_bytes())
     }
 
@@ -37,7 +37,7 @@ impl Directory {
         &self,
         relative_path: P,
         obj: &T,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let json_string = serde_json::to_string_pretty(obj)?;
         self.write_string(relative_path.as_ref().with_extension("json"), json_string)
     }
@@ -48,14 +48,14 @@ impl Directory {
         &self,
         relative_path: P,
         obj: &T,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         let toml_string = toml::to_string_pretty(obj)?;
         self.write_string(relative_path.as_ref().with_extension("toml"), toml_string)
     }
 
     /// Convenience method to write a `.gitignore` file in the directory
     /// that causes all content to be ignored by Git.
-    pub fn write_gitignore(&self) -> Result<(), Error> {
+    pub fn write_gitignore(&self) -> Result<()> {
         self.write_string(".gitignore", "*\n")
     }
 }

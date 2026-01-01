@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use crate::util::{Path, Result};
+
 const CLEAN_ON_INIT_DEFAULT: bool = false;
 const GITIGNORE_ON_INIT_DEFAULT: bool = false;
 
@@ -18,21 +20,19 @@ const GITIGNORE_ON_INIT_DEFAULT: bool = false;
 /// removed on drop, to clean them up on creation, or to make them ignored by Git.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Directory {
-    /// A base path that will be kept on drop.
-    base_path: PathBuf,
-    /// The subdirectories that were created when instantiating this struct.
-    subdirs: Vec<String>,
+    /// The path used for this directory.
+    path: Path,
     /// If true, any existing content will be removed when the directory is initialized.
     pub clean_on_init: bool,
     /// If true, a `.gitignore` file will be created in the directory on initialization.
     pub gitignore_on_init: bool,
 }
 
-mod access;
 mod cargo;
 mod constructors;
 mod drop;
 mod files;
+mod properties;
 mod util;
 
 // TODO: add more tests

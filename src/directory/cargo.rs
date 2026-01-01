@@ -115,7 +115,7 @@ mod tests {
             assert!(!expected_path.exists());
             assert_eq!(directory.initialize(), Ok(()));
 
-            assert_eq!(directory.path(), expected_path.as_path());
+            assert_eq!(directory.path(), expected_path.clone());
             assert!(expected_path.exists());
             assert!(expected_path.is_dir());
         }

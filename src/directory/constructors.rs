@@ -1,6 +1,6 @@
 use super::*;
 
-use std::path::Path;
+use crate::util::Path;
 
 /// Constructors and factory methods.
 impl Directory {
@@ -17,16 +17,12 @@ impl Directory {
     /// - Returning a `Result` is not an option, because I want to keep creating
     ///   `Directory` instances as simple as possible.
     /// - Possible solution: Deferr the path (esp. parent) resolution to `initialize()`.
-    pub fn new<P: AsRef<Path>>(path: P) -> Self {
-        let path = path.as_ref().to_path_buf();
-        if path.exists() {
-            return Self::new_persistent(path);
+    pub fn new<P: AsRef<std::path::Path>>(path: P) -> Self {
+        Self {
+            path: Path::new(path),
+            clean_on_init: CLEAN_ON_INIT_DEFAULT,
+            gitignore_on_init: GITIGNORE_ON_INIT_DEFAULT,
         }
-
-        let dirname = path.file_name().expect("Malformed path: no file name");
-        let parent = path.parent().expect("Malformed path: no parent");
-
-        Self::new(parent).new_subdir(dirname.to_string_lossy())
     }
 
     /// Creates a new persistent `Directory` instance.
@@ -34,14 +30,12 @@ impl Directory {
     /// I.e. the directory will not be removed from the
     /// file system when the instance is dropped.
     /// TODO: handle errors if the directory cannot be created.
-    pub fn new_persistent<P: AsRef<Path>>(path: P) -> Self {
-        let dir = Self {
-            base_path: path.as_ref().to_path_buf(),
-            subdirs: Vec::new(),
+    pub fn new_persistent<P: AsRef<std::path::Path>>(path: P) -> Self {
+        Self {
+            path: Path::new_persistent(path),
             clean_on_init: CLEAN_ON_INIT_DEFAULT,
             gitignore_on_init: GITIGNORE_ON_INIT_DEFAULT,
-        };
-        dir
+        }
     }
 
     /// Creates a new `Directory` instance from `self` and a subdirectory name.
@@ -49,21 +43,16 @@ impl Directory {
     /// If the target path already exists, it is kept persistent.
     /// Otherwise, adds the subdirectory to the internal record of created subdirectories.
     pub fn new_subdir<S: Into<String>>(mut self, subdir: S) -> Self {
-        let subdir = subdir.into();
-        let target_path = self.base_path.join(&subdir);
-        if target_path.exists() {
-            return Self::new_persistent(target_path);
-        }
-
-        self.subdirs.push(subdir);
+        self.path.add_subdir(subdir);
         self
     }
 
     /// Turns `self` into a persistent directory.
     /// I.e. deletes the information about created subdirectories, so that the
     /// directory will not be removed from the file system when the instance is dropped.
-    pub fn keep(self) -> Self {
-        Self::new_persistent(self.path())
+    pub fn keep(mut self) -> Self {
+        self.path.make_persistent();
+        self
     }
 
     /// Creates a new `Directory` instance from self.
@@ -159,12 +148,12 @@ mod tests {
         let dir_path = temp_dir.path().join("persistent_dir");
         {
             let directory = Directory::new(&dir_path).keep();
-            assert!(!directory.base_path.exists());
+            assert!(!directory.exists());
 
             assert_eq!(directory.initialize(), Ok(()));
-            assert!(directory.base_path.exists());
-            assert!(directory.base_path.is_dir());
-            assert_eq!(directory.base_path, dir_path);
+            assert!(directory.exists());
+            assert!(directory.is_dir());
+            assert_eq!(directory.path(), dir_path);
         }
         assert!(dir_path.exists());
         assert!(dir_path.is_dir());

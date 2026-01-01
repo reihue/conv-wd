@@ -1,5 +1,5 @@
 /// Defines custom error types for the crate.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Error {
     /// Indicates that a path is not a directory, although it was expected to be one.
     PathIsNotADirectory(std::path::PathBuf),
