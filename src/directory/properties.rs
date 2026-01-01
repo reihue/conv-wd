@@ -22,6 +22,12 @@ impl Directory {
     pub fn path(&self) -> PathBuf {
         self.path.to_path_buf()
     }
+
+    /// Returns true if the directory is persistent
+    /// (i.e., has no subdirectories that would be dropped).
+    pub fn is_persistent(&self) -> bool {
+        self.path.is_persistent()
+    }
 }
 
 #[cfg(test)]
@@ -101,5 +107,17 @@ mod tests {
 
         let directory = Directory::new(&invalid_path);
         assert_eq!(directory.path(), invalid_path);
+    }
+
+    #[test]
+    fn is_persistent() {
+        let temp_dir = tempdir().unwrap();
+        let dir_path = temp_dir.path().join("test_dir");
+
+        let persistent_directory = Directory::new(&dir_path).keep();
+        let non_persistent_directory = Directory::new(&dir_path);
+
+        assert!(persistent_directory.is_persistent());
+        assert!(!non_persistent_directory.is_persistent());
     }
 }
