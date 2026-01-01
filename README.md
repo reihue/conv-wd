@@ -47,23 +47,27 @@ let persistent_gitignore_dir_path = target_dir.join("persistent_gitignore_dir");
     // Create a temporary working directory that is deleted when dropped.
     // This is similar to using `tempfile::tempdir()`, but allows you to specify
     // the path to the directory.
-    let temp_dir = Directory::create(&temp_dir_path);
+    let temp_dir = Directory::new(&temp_dir_path);
+    temp_dir.initialize().unwrap();
 
     // Create a persistent working directory that remains on the filesystem.
     // This is useful for prototyping data structures and keeping the
     // generated files for later inspection.
-    let persistent_dir = Directory::create(&persistent_dir_path).keep();
+    let persistent_dir = Directory::new(&persistent_dir_path).keep();
     persistent_dir.write_string("example.txt", "Hello, persistent world!");
+    persistent_dir.initialize().unwrap();
 
     // Create a persistent working directory that is cleaned up on creation.
     // I.e. any existing content is removed when the `Directory` instance is created.
     // This is useful for ensuring a clean state when reusing directory paths in tests.
     std::fs::create_dir_all(&clean_persistent_dir_path).unwrap();
     std::fs::write(&clean_persistent_dir_path.join("old_file.txt"), "old content").unwrap();
-    let clean_temp_dir = Directory::create(&clean_persistent_dir_path).keep().clean();
+    let clean_temp_dir = Directory::new(&clean_persistent_dir_path).keep().clean();
+    clean_temp_dir.initialize().unwrap();
 
     // Create a persistent working directory with a .gitignore file that ignores all content.
-    let persistent_gitignore_dir = Directory::create(&persistent_gitignore_dir_path).keep().with_gitignore();
+    let persistent_gitignore_dir = Directory::new(&persistent_gitignore_dir_path).keep().with_gitignore();
+    persistent_gitignore_dir.initialize().unwrap();
 }
 
 assert!(target_dir.exists());

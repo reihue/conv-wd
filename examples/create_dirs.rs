@@ -3,10 +3,10 @@ use conv_wd::{Directory, Error};
 fn main() -> Result<(), Error> {
     // Create a persistent directory for output files wich is ignored by git
     // and which is cleaned up on each run.
-    let outdir = Directory::cargo_examples_subdir("output")?
-        .keep()?
-        .clean()?
-        .with_gitignore()?;
+    let outdir = Directory::cargo_examples_subdir("output")
+        .keep()
+        .clean()
+        .with_gitignore();
 
     // Create files inside the directory to demonstrate the `write` methods.
     // the files are created with timestamps in thei names, so their names

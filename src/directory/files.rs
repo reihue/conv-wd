@@ -17,10 +17,9 @@ impl Directory {
             return Err(Error::path_is_absolute(relative_path));
         }
         let file_path = self.path().join(relative_path.as_ref());
-        match std::fs::write(&file_path, content.as_ref()) {
-            Ok(_) => Ok(()),
-            Err(_) => Err(Error::file_write_error(file_path)),
-        }
+        std::fs::write(&file_path, content.as_ref())?;
+
+        Ok(())
     }
 
     /// Writes a string to a file at the given path within the directory.
@@ -67,58 +66,54 @@ mod tests {
 
     use tempfile::tempdir;
 
-    use crate::Error;
-
     #[test]
-    fn write_bytes() -> Result<(), Error> {
+    fn write_bytes() {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path().join("test_dir");
 
-        let directory = Directory::new(dir_path.join("subdir"))?;
+        let directory = Directory::new(dir_path.join("subdir"));
+        assert_eq!(directory.initialize(), Ok(()));
+
         let file_name = "test_file.txt";
         let file_content = b"Hello, world!";
-        directory.write_bytes(file_name, file_content)?;
+        assert_eq!(directory.write_bytes(file_name, file_content), Ok(()));
 
         let written_file_path = directory.path().join(file_name);
         assert!(written_file_path.exists());
         let read_content = std::fs::read(&written_file_path).unwrap();
         assert_eq!(read_content, file_content);
-
-        Ok(())
     }
 
     #[test]
-    fn write_string() -> Result<(), Error> {
+    fn write_string() {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path().join("test_dir");
 
-        let directory = Directory::new(dir_path.join("subdir"))?;
+        let directory = Directory::new(dir_path.join("subdir"));
+        assert_eq!(directory.initialize(), Ok(()));
+
         let file_name = "test_file.txt";
         let file_content = "Hello, world!";
-        directory.write_string(file_name, file_content)?;
-
+        assert_eq!(directory.write_string(file_name, file_content), Ok(()));
         let written_file_path = directory.path().join(file_name);
         assert!(written_file_path.exists());
         let read_content = std::fs::read_to_string(&written_file_path).unwrap();
         assert_eq!(read_content, file_content);
-
-        Ok(())
     }
 
     #[test]
-    fn write_gitignore() -> Result<(), Error> {
+    fn write_gitignore() {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path().join("test_dir");
 
-        let directory = Directory::new(dir_path.join("subdir"))?;
-        directory.write_gitignore()?;
+        let directory = Directory::new(dir_path.join("subdir"));
+        assert_eq!(directory.initialize(), Ok(()));
 
+        assert_eq!(directory.write_gitignore(), Ok(()));
         let written_file_path = directory.path().join(".gitignore");
         assert!(written_file_path.exists());
         let read_content = std::fs::read_to_string(&written_file_path).unwrap();
         assert_eq!(read_content, "*\n");
-
-        Ok(())
     }
 
     #[derive(Serialize, serde::Deserialize, PartialEq, Debug)]
@@ -127,17 +122,17 @@ mod tests {
     }
 
     #[test]
-    fn write_json() -> Result<(), Error> {
+    fn write_json() {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path().join("test_dir");
-        let directory = Directory::new(dir_path.join("subdir"))?;
-
+        let directory = Directory::new(dir_path.join("subdir"));
+        assert_eq!(directory.initialize(), Ok(()));
         let testdata = TestData {
             content: "Hello, JSON!".to_string(),
         };
-        directory.write_json("data_file1", &testdata)?;
-        directory.write_json("data_file2.json", &testdata)?;
-        directory.write_json("data_file3.txt", &testdata)?;
+        assert_eq!(directory.write_json("data_file1", &testdata), Ok(()));
+        assert_eq!(directory.write_json("data_file2.json", &testdata), Ok(()));
+        assert_eq!(directory.write_json("data_file3.txt", &testdata), Ok(()));
 
         assert!(directory.path().join("data_file1.json").exists());
         assert!(directory.path().join("data_file2.json").exists());
@@ -150,22 +145,21 @@ mod tests {
                 serde_json::from_str(&read_content).expect("Failed to deserialize JSON");
             assert_eq!(deserialized, testdata);
         }
-
-        Ok(())
     }
 
     #[test]
-    fn write_toml() -> Result<(), Error> {
+    fn write_toml() {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path().join("test_dir");
-        let directory = Directory::new(dir_path.join("subdir"))?;
+        let directory = Directory::new(dir_path.join("subdir"));
+        assert_eq!(directory.initialize(), Ok(()));
 
         let testdata = TestData {
             content: "Hello, TOML!".to_string(),
         };
-        directory.write_toml("data_file1", &testdata)?;
-        directory.write_toml("data_file2.toml", &testdata)?;
-        directory.write_toml("data_file3.txt", &testdata)?;
+        assert_eq!(directory.write_toml("data_file1", &testdata), Ok(()));
+        assert_eq!(directory.write_toml("data_file2.toml", &testdata), Ok(()));
+        assert_eq!(directory.write_toml("data_file3.txt", &testdata), Ok(()));
 
         assert!(directory.path().join("data_file1.toml").exists());
         assert!(directory.path().join("data_file2.toml").exists());
@@ -178,7 +172,5 @@ mod tests {
                 toml::from_str(&read_content).expect("Failed to deserialize JSON");
             assert_eq!(deserialized, testdata);
         }
-
-        Ok(())
     }
 }

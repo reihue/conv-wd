@@ -2,101 +2,82 @@ use super::*;
 
 use std::path::Path;
 
-use crate::Error;
-
 /// Constructors and factory methods.
 impl Directory {
     /// Creates a new `Directory` instance.
     ///
+    /// Determines which parent directories have to be created and stores this
+    /// information internally for initialization and cleanup on drop.
+    ///
     /// # Arguments
     /// * `path` - The path where the directory should be created.
     ///
-    /// # Behaviour
-    /// - Any required parent directories that do not already exist will be created.
-    /// - A record of which subdirectories were created will be stored internally.
-    /// - On drop, all created subdirectories will be removed, unless they contain
-    ///   any content that was not created as part of this process.
-    pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
+    /// TODO Handle errors if the path is malformed (e.g. has no parent).
+    /// - Currently, the function panics in this case.
+    /// - Returning a `Result` is not an option, because I want to keep creating
+    ///   `Directory` instances as simple as possible.
+    /// - Possible solution: Deferr the path (esp. parent) resolution to `initialize()`.
+    pub fn new<P: AsRef<Path>>(path: P) -> Self {
         let path = path.as_ref().to_path_buf();
         if path.exists() {
-            if !path.is_dir() {
-                return Err(Error::PathIsNotADirectory(path));
-            }
             return Self::new_persistent(path);
         }
 
-        let dirname = path.file_name().ok_or(Error::malformed_path(&path))?;
-        let parent = path.parent().ok_or(Error::malformed_path(&path))?;
+        let dirname = path.file_name().expect("Malformed path: no file name");
+        let parent = path.parent().expect("Malformed path: no parent");
 
-        Self::new(parent).and_then(|dir| dir.new_subdir(dirname.to_string_lossy()))
+        Self::new(parent).new_subdir(dirname.to_string_lossy())
     }
 
     /// Creates a new persistent `Directory` instance.
+    ///
     /// I.e. the directory will not be removed from the
     /// file system when the instance is dropped.
-    /// Creates the directory on the file system if it does not exist.
     /// TODO: handle errors if the directory cannot be created.
-    pub fn new_persistent<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
+    pub fn new_persistent<P: AsRef<Path>>(path: P) -> Self {
         let dir = Self {
             base_path: path.as_ref().to_path_buf(),
             subdirs: Vec::new(),
+            clean_on_init: CLEAN_ON_INIT_DEFAULT,
+            gitignore_on_init: GITIGNORE_ON_INIT_DEFAULT,
         };
-        dir.ensure_exists()?;
-        Ok(dir)
+        dir
     }
 
     /// Creates a new `Directory` instance from `self` and a subdirectory name.
-    /// If the target path already exists, it is used as the base path.
+    ///
+    /// If the target path already exists, it is kept persistent.
     /// Otherwise, adds the subdirectory to the internal record of created subdirectories.
-    /// Creates the subdirectory on the file system if it does not exist.
-    /// TODO: handle directory creation errors
-    pub fn new_subdir<S: Into<String>>(mut self, subdir: S) -> Result<Self, Error> {
+    pub fn new_subdir<S: Into<String>>(mut self, subdir: S) -> Self {
         let subdir = subdir.into();
         let target_path = self.base_path.join(&subdir);
         if target_path.exists() {
-            if !target_path.is_dir() {
-                return Err(Error::PathIsNotADirectory(target_path));
-            }
             return Self::new_persistent(target_path);
         }
 
         self.subdirs.push(subdir);
-        self.ensure_exists()?;
-        Ok(self)
+        self
     }
 
     /// Turns `self` into a persistent directory.
     /// I.e. deletes the information about created subdirectories, so that the
     /// directory will not be removed from the file system when the instance is dropped.
-    pub fn keep(mut self) -> Result<Self, Error> {
-        for d in &self.subdirs {
-            self.base_path.push(d);
-        }
-        self.subdirs.clear();
-        Ok(self)
+    pub fn keep(self) -> Self {
+        Self::new_persistent(self.path())
     }
 
     /// Creates a new `Directory` instance from self.
-    /// Removes all content if the directory already exists.
-    pub fn clean(self) -> Result<Self, Error> {
-        for entry in std::fs::read_dir(self.path()).unwrap() {
-            let entry = entry.unwrap();
-            let path = entry.path();
-            if path.is_dir() {
-                std::fs::remove_dir_all(&path).unwrap();
-            } else {
-                std::fs::remove_file(&path).unwrap();
-            }
-        }
-        self.ensure_exists()?;
-        Ok(self)
+    /// Records that the directory should be cleaned on initialization.
+    pub fn clean(mut self) -> Self {
+        self.clean_on_init = true;
+        self
     }
 
     /// Creates a new `Directory` instance from self.
-    /// Adds a `.gitignore` file that causes all content to be ignored by Git.
-    pub fn with_gitignore(self) -> Result<Self, Error> {
-        self.write_gitignore()?;
-        Ok(self)
+    /// Records that a `.gitignore` file should be created on initialization.
+    pub fn with_gitignore(mut self) -> Self {
+        self.gitignore_on_init = true;
+        self
     }
 }
 
@@ -105,6 +86,8 @@ mod tests {
     use super::*;
 
     use tempfile::tempdir;
+
+    use crate::Error;
 
     // TODO: test cases for new:
     // - regular cases:
@@ -118,25 +101,25 @@ mod tests {
     //   - path ends in ".." (also no parent)
 
     #[test]
-    fn new_non_existing() -> Result<(), Error> {
+    fn new_non_existing() {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path().join("test_dir");
 
         {
-            let directory = Directory::new(&dir_path)?;
+            let directory = Directory::new(&dir_path);
             let path = directory.path();
+            assert!(!path.exists());
 
+            assert_eq!(directory.initialize(), Ok(()));
             assert!(path.exists());
             assert!(path.is_dir());
             assert_eq!(path, dir_path);
         }
         assert!(!dir_path.exists());
-
-        Ok(())
     }
 
     #[test]
-    fn new_existing() -> Result<(), Error> {
+    fn new_existing() {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path().join("test_dir");
         std::fs::create_dir_all(&dir_path).unwrap();
@@ -144,7 +127,7 @@ mod tests {
         assert!(dir_path.is_dir());
 
         {
-            let directory = Directory::new(&dir_path)?;
+            let directory = Directory::new(&dir_path);
             let path = directory.path();
 
             assert!(path.exists());
@@ -153,8 +136,6 @@ mod tests {
         }
         assert!(dir_path.exists());
         assert!(dir_path.is_dir());
-
-        Ok(())
     }
 
     #[test]
@@ -165,29 +146,32 @@ mod tests {
         assert!(file_path.exists());
         assert!(file_path.is_file());
 
-        let result = Directory::new(&file_path);
+        let directory = Directory::new(&file_path);
+        assert!(file_path.exists());
+        assert!(file_path.is_file());
+        let result = directory.initialize();
         assert_eq!(result, Err(Error::path_is_not_a_directory(file_path)));
     }
 
     #[test]
-    fn keep() -> Result<(), Error> {
+    fn keep() {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path().join("persistent_dir");
         {
-            let directory = Directory::new(&dir_path)?.keep()?;
+            let directory = Directory::new(&dir_path).keep();
+            assert!(!directory.base_path.exists());
 
+            assert_eq!(directory.initialize(), Ok(()));
             assert!(directory.base_path.exists());
             assert!(directory.base_path.is_dir());
             assert_eq!(directory.base_path, dir_path);
         }
         assert!(dir_path.exists());
         assert!(dir_path.is_dir());
-
-        Ok(())
     }
 
     #[test]
-    fn clean() -> Result<(), Error> {
+    fn clean() {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path().join("temp_dir");
         std::fs::create_dir_all(&dir_path).unwrap();
@@ -195,25 +179,26 @@ mod tests {
         assert!(dir_path.exists());
         assert!(dir_path.is_dir());
 
-        let directory = Directory::new(&dir_path)?.clean()?;
+        let directory = Directory::new(&dir_path).clean();
+        assert_eq!(directory.initialize(), Ok(()));
         let path = directory.path();
 
         assert!(path.exists());
         assert!(path.is_dir());
         assert_eq!(path, dir_path);
         assert!(std::fs::read_dir(&path).unwrap().next().is_none());
-
-        Ok(())
     }
 
     #[test]
-    fn with_gitignore() -> Result<(), Error> {
+    fn with_gitignore() {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path().join("temp_dir");
 
-        let directory = Directory::new(&dir_path)?.with_gitignore()?;
-        let path = directory.path();
+        let directory = Directory::new(&dir_path).with_gitignore();
+        assert!(!dir_path.exists());
+        assert_eq!(directory.initialize(), Ok(()));
 
+        let path = directory.path();
         assert!(path.exists());
         assert!(path.is_dir());
         assert_eq!(path, dir_path);
@@ -222,7 +207,5 @@ mod tests {
             std::fs::read_to_string(path.join(".gitignore")).unwrap(),
             "*\n"
         );
-
-        Ok(())
     }
 }

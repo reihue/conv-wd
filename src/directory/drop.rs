@@ -18,43 +18,31 @@ mod tests {
 
     use tempfile::tempdir;
 
-    use crate::Error;
-
     #[test]
-    fn drop_temporary_directory() -> Result<(), Error> {
+    fn drop_temporary_directory() {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path().join("temp_dir");
 
         {
-            let directory = Directory {
-                base_path: temp_dir.path().to_path_buf(),
-                subdirs: vec!["temp_dir".to_string()],
-            };
-            directory.ensure_exists()?;
+            let directory = Directory::new(temp_dir.path()).new_subdir("temp_dir");
+            assert_eq!(directory.initialize(), Ok(()));
             assert!(dir_path.exists());
             assert!(dir_path.is_dir());
         }
         assert!(!dir_path.exists());
-
-        Ok(())
     }
 
     #[test]
-    fn drop_persistent_directory() -> Result<(), Error> {
+    fn drop_persistent_directory() {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path().join("persistent_dir");
 
         {
-            let directory = Directory {
-                base_path: dir_path.clone(),
-                subdirs: vec![],
-            };
-            directory.ensure_exists()?;
+            let directory = Directory::new_persistent(&dir_path);
+            assert_eq!(directory.initialize(), Ok(()));
         }
 
         assert!(dir_path.exists());
         assert!(dir_path.is_dir());
-
-        Ok(())
     }
 }

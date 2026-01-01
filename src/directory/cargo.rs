@@ -2,8 +2,6 @@ use super::*;
 
 use std::path::Path;
 
-use crate::Error;
-
 /// Convenience methods/constructors for working with Cargo projects.
 impl Directory {
     /// Creates a new `Directory` instance representing a
@@ -27,7 +25,7 @@ impl Directory {
     ///   Path::new(&std::env::var("CARGO_MANIFEST_DIR").unwrap()).join("target/my_cargo_subdir")
     /// );
     /// ```
-    pub fn cargo_manifest_subdir<P: AsRef<Path>>(subdir: P) -> Result<Self, Error> {
+    pub fn cargo_manifest_subdir<P: AsRef<Path>>(subdir: P) -> Self {
         let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")
             .expect("CARGO_MANIFEST_DIR environment variable is not set");
         assert!(!subdir.as_ref().is_absolute());
@@ -52,7 +50,7 @@ impl Directory {
     ///   Path::new(&std::env::var("CARGO_MANIFEST_DIR").unwrap()).join("examples/my_subdir")
     /// );
     /// ```
-    pub fn cargo_examples_subdir<P: AsRef<Path>>(subdir: P) -> Result<Self, Error> {
+    pub fn cargo_examples_subdir<P: AsRef<Path>>(subdir: P) -> Self {
         Self::cargo_manifest_subdir(PathBuf::from("examples").join(subdir.as_ref()))
     }
 
@@ -73,7 +71,7 @@ impl Directory {
     ///   Path::new(&std::env::var("CARGO_MANIFEST_DIR").unwrap()).join("tests/my_subdir")
     /// );
     /// ```
-    pub fn cargo_tests_subdir<P: AsRef<Path>>(subdir: P) -> Result<Self, Error> {
+    pub fn cargo_tests_subdir<P: AsRef<Path>>(subdir: P) -> Self {
         Self::cargo_manifest_subdir(PathBuf::from("tests").join(subdir.as_ref()))
     }
 
@@ -94,7 +92,7 @@ impl Directory {
     ///   Path::new(&std::env::var("CARGO_MANIFEST_DIR").unwrap()).join("target/my_subdir")
     /// );
     /// ```
-    pub fn cargo_target_subdir<P: AsRef<Path>>(subdir: P) -> Result<Self, Error> {
+    pub fn cargo_target_subdir<P: AsRef<Path>>(subdir: P) -> Self {
         Self::cargo_manifest_subdir(PathBuf::from("target").join(subdir.as_ref()))
     }
 }
@@ -104,7 +102,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn cargo_manifest_subdir() -> Result<(), Error> {
+    fn cargo_manifest_subdir() {
         let subdir_name = "target/cargo_manifest_testdirs";
         let expected_path = std::path::Path::new(
             &std::env::var("CARGO_MANIFEST_DIR")
@@ -113,13 +111,14 @@ mod tests {
         .join(subdir_name);
 
         {
-            let directory = Directory::cargo_manifest_subdir(subdir_name)?;
+            let directory = Directory::cargo_manifest_subdir(subdir_name);
+            assert!(!expected_path.exists());
+            assert_eq!(directory.initialize(), Ok(()));
+
             assert_eq!(directory.path(), expected_path.as_path());
             assert!(expected_path.exists());
             assert!(expected_path.is_dir());
         }
         assert!(!expected_path.exists());
-
-        Ok(())
     }
 }

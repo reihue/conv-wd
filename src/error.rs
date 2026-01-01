@@ -9,8 +9,8 @@ pub enum Error {
     PathIsAbsolute(std::path::PathBuf),
     /// Indicates a malformed path, e.g., when extracting parent directory or file name fails.
     MalformedPath(std::path::PathBuf),
-    /// Indicates an error during a file write operation.
-    FileWriteError(std::path::PathBuf),
+    /// Indicates an error during file system access.
+    IoError(String),
     /// Indicates an error during directory creation.
     DirectoryCreationError(std::path::PathBuf),
     /// Indicates a JSON error.
@@ -47,8 +47,8 @@ impl std::fmt::Display for Error {
                     path.display()
                 )
             }
-            FileWriteError(path) => {
-                write!(f, "Failed to write to file at path '{}'.", path.display())
+            IoError(err) => {
+                write!(f, "Failed to perform I/O operation: {}'.", err)
             }
             JsonError(err) => {
                 write!(f, "{}", err)
@@ -66,8 +66,8 @@ impl Error {
         Error::PathIsNotADirectory(path.as_ref().to_path_buf())
     }
 
-    /// Creates a `ParentDirectoryDoesNotExist` error for the given path.
-    pub fn parent_directory_does_not_exist<P: AsRef<std::path::Path>>(path: P) -> Self {
+    /// Creates a `PathDoesNotExist` error for the given path.
+    pub fn path_does_not_exist<P: AsRef<std::path::Path>>(path: P) -> Self {
         Error::PathDoesNotExist(path.as_ref().to_path_buf())
     }
 
@@ -81,9 +81,9 @@ impl Error {
         Error::MalformedPath(path.as_ref().to_path_buf())
     }
 
-    /// Creates a `FileWriteError` for the given path.
-    pub fn file_write_error<P: AsRef<std::path::Path>>(path: P) -> Self {
-        Error::FileWriteError(path.as_ref().to_path_buf())
+    /// Creates an `IoError` for the given path.
+    pub fn io_error<S: Into<String>>(err: S) -> Self {
+        Error::IoError(err.into())
     }
     /// Creates a `DirectoryCreationError` for the given path.
     pub fn directory_creation_error<P: AsRef<std::path::Path>>(path: P) -> Self {
@@ -92,6 +92,12 @@ impl Error {
 }
 
 impl std::error::Error for Error {}
+
+impl From<std::io::Error> for Error {
+    fn from(err: std::io::Error) -> Self {
+        Error::IoError(err.to_string())
+    }
+}
 
 impl From<serde_json::Error> for Error {
     fn from(err: serde_json::Error) -> Self {
