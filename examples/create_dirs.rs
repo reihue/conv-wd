@@ -1,4 +1,4 @@
-use conv_wd::{Directory, Error};
+use conv_wd::{Directory, util::Error};
 
 fn main() -> Result<(), Error> {
     // Create a persistent directory for output files wich is ignored by git

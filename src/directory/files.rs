@@ -3,7 +3,7 @@ use super::*;
 use serde::Serialize;
 use std::path::Path;
 
-use crate::Error;
+use crate::util::Error;
 
 /// Methods for file operations within the directory.
 impl Directory {

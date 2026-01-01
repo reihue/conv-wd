@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::Error;
+use crate::util::Error;
 
 /// Utility functions.
 /// TODO: Revisit naming? Is "util" appropriate here any more?

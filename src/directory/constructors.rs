@@ -87,7 +87,7 @@ mod tests {
 
     use tempfile::tempdir;
 
-    use crate::Error;
+    use crate::util::Error;
 
     // TODO: test cases for new:
     // - regular cases:
